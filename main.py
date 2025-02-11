@@ -77,6 +77,7 @@ with open(log_filename, "a") as log:
         for step in agent.stream({"messages": [("human", query)]}, config, stream_mode="updates"):
             log.write(f"Assistant: {step}\n\n")
             if "agent" in step:
-                print(step["agent"]["messages"][-1].content)
-                print()
+                answer = step["agent"]["messages"][-1].content
+                if answer:
+                    print(f"{answer}\n\n")
         log.flush()
