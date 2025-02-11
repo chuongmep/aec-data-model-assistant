@@ -27,7 +27,7 @@ def find_graphql_type(type_name: str) -> dict:
 # Setup the tools for the assistant
 
 @tool
-def list_graphql_queries() -> list[tuple[str, str]]:
+def list_graphql_queries() -> list:
     """Returns all top-level GraphQL queries in Autodesk AEC Data Model API."""
     query_object = find_graphql_type("Query")
     if query_object:
@@ -40,29 +40,33 @@ def get_graphql_type(type_name: str) -> dict:
     return find_graphql_type(type_name)
 
 @tool
-def execute_graphql_query(query: str):
-    """Executes the given GraphQL query in Autodesk AEC Data Model API, and returns the result."""
+def execute_graphql_query(graphql_query: str) -> dict:
+    """Executes the given GraphQL query in Autodesk AEC Data Model API, and returns the result as a JSON."""
     transport = AIOHTTPTransport(url=API_ENDPOINT, headers={"Authorization": f"Bearer {ACCESS_TOKEN}"})
     client = Client(transport=transport, fetch_schema_from_transport=True)
-    return client.execute(gql(query))
+    return client.execute(gql(graphql_query))
 
 @tool
-def execute_jq_query(query: str, json: str):
-    """Executes the given jq query on a stringified JSON."""
-    return jq.compile(query).input_text(json).all()
+def execute_jq_query(jq_query: str, input_json: str):
+    """Processes the given JSON input with the given jq query, and returns the result as a JSON."""
+    return jq.compile(jq_query).input_text(input_json).all()
 
 # Setup the assistant
 
 model = ChatOpenAI(model="gpt-4o")
 tools = [list_graphql_queries, get_graphql_type, execute_graphql_query, execute_jq_query]
-prompt = ChatPromptTemplate.from_messages(
+system_prompt = " ".join([
+    "You are a helpful assistant answering questions about user's data in AEC Data Model using its GraphQL API.",
+    "Where possible, process JSON responses from the GraphQL API with jq queries to extract the relevant information.",
+])
+prompt_template = ChatPromptTemplate.from_messages(
     [
-        ("system", "You are a helpful assistant answering questions about user's data in AEC Data Model, using its GraphQL API, and using jq to process the JSON responses."),
+        ("system", system_prompt),
         ("placeholder", "{messages}"),
     ]
 )
 memory = MemorySaver()
-agent = create_react_agent(model, tools, prompt=prompt, checkpointer=memory)
+agent = create_react_agent(model, tools, prompt=prompt_template, checkpointer=memory)
 config = {"configurable": {"thread_id": "test-thread"}}
 
 # Start the chat loop
