@@ -1,5 +1,6 @@
 import os
 import json
+import jq
 from datetime import datetime
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
@@ -14,47 +15,49 @@ ACCESS_TOKEN = os.getenv("APS_ACCESS_TOKEN")
 if not ACCESS_TOKEN:
     raise ValueError("APS_ACCESS_TOKEN environment variable is not set")
 
-# Create a GraphQL client to interact with Autodesk AEC Data Model API
-
-transport = AIOHTTPTransport(url=API_ENDPOINT, headers={"Authorization": f"Bearer {ACCESS_TOKEN}"})
-client = Client(transport=transport, fetch_schema_from_transport=True)
-
 # Read the AEC Data Model GraphQL schema from a local file (TODO: fetch it from the API)
 
 with open("schema/aecdm.json", "r") as file:
     schema = json.load(file)
 schema_types = schema["data"]["__schema"]["types"]
 
-def find_schema_type(type_name: str) -> dict:
+def find_graphql_type(type_name: str) -> dict:
     return next((item for item in schema_types if item["name"] == type_name), None)
 
 # Setup the tools for the assistant
 
 @tool
-def list_queries() -> list[tuple[str, str]]:
+def list_graphql_queries() -> list[tuple[str, str]]:
     """Returns all top-level GraphQL queries in Autodesk AEC Data Model API."""
-    query_object = find_schema_type("Query")
+    query_object = find_graphql_type("Query")
     if query_object:
         return query_object["fields"]
     return []
 
 @tool
-def get_type_details(type_name: str) -> dict:
+def get_graphql_type(type_name: str) -> dict:
     """Returns details about given GraphQL type in Autodesk AEC Data Model API."""
-    return find_schema_type(type_name)
+    return find_graphql_type(type_name)
 
 @tool
-def execute_query(query: str) -> dict:
+def execute_graphql_query(query: str):
     """Executes the given GraphQL query in Autodesk AEC Data Model API, and returns the result."""
+    transport = AIOHTTPTransport(url=API_ENDPOINT, headers={"Authorization": f"Bearer {ACCESS_TOKEN}"})
+    client = Client(transport=transport, fetch_schema_from_transport=True)
     return client.execute(gql(query))
+
+@tool
+def execute_jq_query(query: str, json: str):
+    """Executes the given jq query on a stringified JSON."""
+    return jq.compile(query).input_text(json).all()
 
 # Setup the assistant
 
 model = ChatOpenAI(model="gpt-4o")
-tools = [list_queries, get_type_details, execute_query]
+tools = [list_graphql_queries, get_graphql_type, execute_graphql_query, execute_jq_query]
 prompt = ChatPromptTemplate.from_messages(
     [
-        ("system", "You are a helpful assistant answering questions about user's data in AEC Data Model using its GraphQL API."),
+        ("system", "You are a helpful assistant answering questions about user's data in AEC Data Model, using its GraphQL API, and using jq to process the JSON responses."),
         ("placeholder", "{messages}"),
     ]
 )
@@ -75,3 +78,5 @@ with open(log_filename, "a") as log:
             log.write(f"Assistant: {step}\n\n")
             if "agent" in step:
                 print(step["agent"]["messages"][-1].content)
+                print()
+        log.flush()
