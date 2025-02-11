@@ -18,11 +18,11 @@ The app runs in a loop as long as the user provides questions. Try some of these
 
 > list all hubs I have access to
 
-> what projects are in "<some-hub-name>"?
+> what projects are in "[some-hub-name]"?
 
 > what element groups are in this project?
 
-> list all elements in "<some-design-file>"
+> list all elements in "[some-design-file]"
 
 ## Development
 
