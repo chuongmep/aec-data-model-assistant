@@ -1,35 +1,20 @@
-import os
-import json
 import jq
 from datetime import datetime
-from gql import Client, gql
-from gql.transport.aiohttp import AIOHTTPTransport
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
+from aecdm import get_type_schema, execute_query
 
-API_ENDPOINT = "https://developer.api.autodesk.com/aec/graphql"
-ACCESS_TOKEN = os.getenv("APS_ACCESS_TOKEN")
-if not ACCESS_TOKEN:
-    raise ValueError("APS_ACCESS_TOKEN environment variable is not set")
-
-# Read the AEC Data Model GraphQL schema from a local file (TODO: fetch it from the API)
-
-with open("schema/aecdm.json", "r") as file:
-    schema = json.load(file)
-schema_types = schema["data"]["__schema"]["types"]
-
-def find_graphql_type(type_name: str) -> dict:
-    return next((item for item in schema_types if item["name"] == type_name), None)
+OPENAI_MODEL = "gpt-4o"
 
 # Setup the tools for the assistant
 
 @tool
 def list_graphql_queries() -> list:
     """Returns all top-level GraphQL queries in Autodesk AEC Data Model API."""
-    query_object = find_graphql_type("Query")
+    query_object = get_type_schema("Query")
     if query_object:
         return query_object["fields"]
     return []
@@ -37,14 +22,12 @@ def list_graphql_queries() -> list:
 @tool
 def get_graphql_type(type_name: str) -> dict:
     """Returns details about given GraphQL type in Autodesk AEC Data Model API."""
-    return find_graphql_type(type_name)
+    return get_type_schema(type_name)
 
 @tool
 def execute_graphql_query(graphql_query: str) -> dict:
     """Executes the given GraphQL query in Autodesk AEC Data Model API, and returns the result as a JSON."""
-    transport = AIOHTTPTransport(url=API_ENDPOINT, headers={"Authorization": f"Bearer {ACCESS_TOKEN}"})
-    client = Client(transport=transport, fetch_schema_from_transport=True)
-    return client.execute(gql(graphql_query))
+    return execute_query(graphql_query)
 
 @tool
 def execute_jq_query(jq_query: str, input_json: str):
@@ -53,18 +36,13 @@ def execute_jq_query(jq_query: str, input_json: str):
 
 # Setup the assistant
 
-model = ChatOpenAI(model="gpt-4o")
+model = ChatOpenAI(model=OPENAI_MODEL)
 tools = [list_graphql_queries, get_graphql_type, execute_graphql_query, execute_jq_query]
 system_prompt = " ".join([
     "You are a helpful assistant answering questions about user's data in AEC Data Model using its GraphQL API.",
     "Where possible, process JSON responses from the GraphQL API with jq queries to extract the relevant information.",
 ])
-prompt_template = ChatPromptTemplate.from_messages(
-    [
-        ("system", system_prompt),
-        ("placeholder", "{messages}"),
-    ]
-)
+prompt_template = ChatPromptTemplate.from_messages([("system", system_prompt), ("placeholder", "{messages}")])
 memory = MemorySaver()
 agent = create_react_agent(model, tools, prompt=prompt_template, checkpointer=memory)
 config = {"configurable": {"thread_id": "test-thread"}}
