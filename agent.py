@@ -40,19 +40,3 @@ def create_agent(model):
     prompt_template = ChatPromptTemplate.from_messages([("system", system_prompt), ("placeholder", "{messages}")])
     memory = MemorySaver()
     return create_react_agent(model, tools, prompt=prompt_template, checkpointer=memory)
-
-def extract_response(step):
-    results = []
-    if "agent" in step:
-        for message in step["agent"]["messages"]:
-            if isinstance(message.content, str) and message.content:
-                results.append(message.content)
-            elif isinstance(message.content, list):
-                for entry in message.content:
-                    if isinstance(entry, str) and entry:
-                        results.append(entry)
-                    elif isinstance(entry, dict) and "text" in entry:
-                        results.append(entry["text"])
-    elif "tools" in step:
-        pass
-    return results
