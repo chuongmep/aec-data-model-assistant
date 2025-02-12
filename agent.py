@@ -3,32 +3,91 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
-from aecdm import get_type_schema, execute_query
+from gql import Client, gql
+from gql.transport.aiohttp import AIOHTTPTransport
 
-@tool
-def list_graphql_queries() -> list:
-    """Returns all top-level GraphQL queries in Autodesk AEC Data Model API."""
-    query_object = get_type_schema("Query")
-    if query_object:
-        return query_object["fields"]
-    return []
+INTROSPECTION_QUERY = """
+{
+  __schema {
+    types {
+      kind
+      name
+      description
+      fields(includeDeprecated: false) {
+        name
+        description
+        args {
+          name
+          description
+          type {
+            kind
+            name
+            ofType {
+              kind
+              name
+            }
+          }
+        }
+        type {
+          kind
+          name
+          ofType {
+            kind
+            name
+          }
+        }
+      }
+    }
+  }
+}
+"""
 
-@tool
-def get_graphql_type(type_name: str) -> dict:
-    """Returns details about given GraphQL type in Autodesk AEC Data Model API."""
-    return get_type_schema(type_name)
+def create_graphql_agent(model, url, headers):
+    """
+    Creates an agent with custom tools for interacting with GraphQL API.
+    Args:
+        model (BaseChatModel): The model to be used by the agent.
+        url (str): The GraphQL endpoint.
+        headers (dict): The headers to be used for the GraphQL requests.
+    Returns:
+        An agent configured with tools for listing GraphQL queries, retrieving GraphQL type schemas,
+        executing GraphQL queries, and processing JSON responses with jq queries.
+    """
 
-@tool
-def execute_graphql_query(graphql_query: str) -> dict:
-    """Executes the given GraphQL query in Autodesk AEC Data Model API, and returns the result as a JSON."""
-    return execute_query(graphql_query)
+    def _query(query: str) -> dict:
+        # Create a separate client because tools can be used in parallel
+        transport = AIOHTTPTransport(url=url, headers=headers)
+        client = Client(transport=transport, fetch_schema_from_transport=True)
+        return client.execute(gql(query))
 
-@tool
-def execute_jq_query(jq_query: str, input_json: str):
-    """Processes the given JSON input with the given jq query, and returns the result as a JSON."""
-    return jq.compile(jq_query).input_text(input_json).all()
+    # Get the introspection schema from the GraphQL API
+    schema = _query(INTROSPECTION_QUERY) # TODO: maybe cache this?
+    types = schema["__schema"]["types"]
 
-def create_agent(model):
+    # Define tools for the agent
+    @tool
+    def list_graphql_queries() -> list:
+        """Returns the name, description, and return type of all top-level GraphQL queries in Autodesk AEC Data Model API."""
+        query_type = next((t for t in types if t["name"] == "Query"), None)
+        return [{"name":field["name"], "description":field["description"], "type":field["type"]} for field in query_type["fields"]]
+
+    @tool
+    def get_graphql_type(type_name: str) -> dict | None:
+        """Returns the introspection JSON schema for the given GraphQL type in Autodesk AEC Data Model API."""
+        type = next((t for t in types if t["name"] == type_name), None)
+        return type
+
+    @tool
+    def execute_graphql_query(graphql_query: str) -> dict:
+        """Executes the given GraphQL query in Autodesk AEC Data Model API, and returns the result as a JSON."""
+        return _query(graphql_query)
+
+    @tool
+    def execute_jq_query(jq_query: str, input_json: str):
+        """Processes the given JSON input with the given jq query, and returns the result as a JSON."""
+        return jq.compile(jq_query).input_text(input_json).all()
+
+    # Create the agent
     tools = [list_graphql_queries, get_graphql_type, execute_graphql_query, execute_jq_query]
     system_prompt = " ".join([
         "You are a helpful assistant answering questions about data in AEC Data Model using its GraphQL API.",
