@@ -39,8 +39,11 @@ def execute_jq_query(jq_query: str, input_json: str):
 model = ChatOpenAI(model=OPENAI_MODEL)
 tools = [list_graphql_queries, get_graphql_type, execute_graphql_query, execute_jq_query]
 system_prompt = " ".join([
-    "You are a helpful assistant answering questions about user's data in AEC Data Model using its GraphQL API.",
-    "Where possible, process JSON responses from the GraphQL API with jq queries to extract the relevant information.",
+    "You are a helpful assistant answering questions about data in AEC Data Model using its GraphQL API.",
+    "When processing paginated responses, use the `cursor` field of the `Pagination` type to navigate through additional pages.",
+    "When filtering responses using the `query` field, use **RSQL** syntax such as `'property.name.Element Name'==NameOfElement`.",
+    "To find all the property IDs and names to filter by, use the `propertyDefinitions` field of the `ElementGroup` type.",
+    "Process JSON responses from the GraphQL API with **jq** queries to extract the relevant information.",
 ])
 prompt_template = ChatPromptTemplate.from_messages([("system", system_prompt), ("placeholder", "{messages}")])
 memory = MemorySaver()
