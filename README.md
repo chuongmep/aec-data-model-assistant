@@ -1,6 +1,6 @@
-# aec-data-model-assistant
+# AEC Data Model Assistant
 
-Experimental AI assistant for [Autodesk AEC Data Model API](https://aps.autodesk.com/autodesk-aec-data-model-api), built using [LangChain](https://www.langchain.com/) agents.
+Experimental chatbot for querying design data in [Autodesk Construction Cloud](https://construction.autodesk.com/) using custom [LangChain](https://www.langchain.com) agents and [Autodesk Platform Services](https://aps.autodesk.com) (specifically with [AEC Data Model API](https://aps.autodesk.com/autodesk-aec-data-model-api)).
 
 ## How does it work?
 
@@ -11,7 +11,7 @@ The application implements a [LangGraph agent](https://python.langchain.com/docs
 - Executing a specific GraphQL query against the AEC Data Model API
 - Processing a JSON response from GraphQL API using [jq](https://jqlang.org/)
 
-This way, we don't have to feed the complete (and very large) GraphQL schema to the context. The agent will pull in just the parts of the schema it needs based on the current task, generate a GraphQL query, execute it against the AEC Data Model API, and if needed, extract relevant information out of the JSON response using jq.
+This way, we don't have to feed the complete (and potentially very large) GraphQL schema to the context. The agent will pull in just the parts of the schema it needs based on the current task, generate a GraphQL query, execute it against the AEC Data Model API, and if needed, extract relevant information out of the JSON response using jq.
 
 ## Usage
 
