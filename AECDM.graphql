@@ -1,0 +1,591 @@
+"""Valid comparators when filtering by a value"""
+enum Comparators {
+  """Case sensitive"""
+  CASE_SENSITIVE
+
+  """Contains"""
+  CONTAINS
+
+  """Starts with"""
+  STARTS_WITH
+
+  """Ends with"""
+  ENDS_WITH
+
+  """Greater than"""
+  GREATER_THAN
+
+  """Less than"""
+  LESS_THAN
+
+  """Greater than or equal to"""
+  GREATER_THAN_EQUAL_TO
+
+  """Less than or equal to"""
+  LESS_THAN_EQUAL_TO
+
+  """Not equal to"""
+  NOT_EQUAL
+}
+
+"""An ISO-8601 encoded UTC date string."""
+scalar DateTime
+
+"""A PropertyValue and its count"""
+type DistinctPropertyValue {
+  """A distinct property value."""
+  value: PropertyValue!
+
+  """The number of times the distinct property value is found."""
+  count: Int!
+}
+
+"""
+Contains a list of DistinctPropertyValue returned in response to a query.
+"""
+type DistinctPropertyValues {
+  """Information about the Property of the distinct values returned."""
+  definition: PropertyDefinition
+
+  """
+  An array of distinct property values.
+  @param {Int=} limit - Limit the number of distinct values returned. Does not
+  support pagination. Default = 200, maximum = 2000.
+  """
+  values(limit: Int = 200): [DistinctPropertyValue!]
+}
+
+"""A collection of distinct properties matching the name given."""
+type DistinctPropertyValuesCollection {
+  """
+  Contains information about the current page when results are split into multiple pages.
+  """
+  pagination: Pagination
+
+  """An array of distinct property values matching the name given."""
+  results: [DistinctPropertyValues]!
+}
+
+"""Represents an element type."""
+type Element {
+  """Globally unique identifier for an Element."""
+  id: ID!
+
+  """The human-readable name of the Element"""
+  name: String!
+
+  """
+  Query for specific Properties
+  @param {PropertyFilterInput=} filter - Specifies which properties to return.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  @param {String=} includeReferencesProperties - Must be set to the reference name.
+  """
+  properties(filter: PropertyFilterInput, pagination: PaginationInput, includeReferencesProperties: String): Properties!
+
+  """
+  Represents information that further defines the Element (e.g. Type data)
+  @param {ReferencePropertyFilterInput=} filter - Specifies which reference properties to return.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  """
+  references(filter: ReferencePropertyFilterInput, pagination: PaginationInput): ReferenceProperties
+
+  """Timestamp of element creation"""
+  createdOn: DateTime
+
+  """Latest timestamp when the element was modified"""
+  lastModifiedOn: DateTime
+
+  """
+  Elements which have references to the current element
+  @param {String} name - The name of relationship to find references for.
+  @param {ElementFilterInput=} filter - Specifies how to filter elements with references to current element.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  """
+  referencedBy(name: String!, filter: ElementFilterInput, pagination: PaginationInput): Elements
+
+  """Alternative identifiers for this element"""
+  alternativeIdentifiers: ElementAlternativeIdentifiers
+
+  """The elementGroup which this element belongs to."""
+  elementGroup: ElementGroup
+}
+
+"""Contains alternative identifiers for an element"""
+type ElementAlternativeIdentifiers {
+  """The elements id when accessing it in AEC docs"""
+  externalElementId: ID!
+
+  """The elements id in Revit"""
+  revitElementId: ID
+}
+
+"""Contains a list of Cusors returned in response to a query."""
+type ElementCursors {
+  """An array containing Cursors"""
+  results: [String!]!
+}
+
+"""Query input for filtering Elements."""
+input ElementFilterInput {
+  """Filter query in RSQL format for searching elements"""
+  query: String
+
+  """Filter for elements with a specified name"""
+  name: [String!]
+
+  """Filter for elements with a specified name and comparator to apply"""
+  nameWithComparator: [ValueComparatorInput!]
+
+  """Filter for elements with specified property values"""
+  properties: [ElementPropertyFilterInput!]
+
+  """Filter for elements with specified reference properties"""
+  references: [ElementReferenceFilterInput!]
+
+  """Filter for elements created by a specified user (email)"""
+  createdBy: [String!]
+
+  """Filter for elements last modified by a specified user (email)"""
+  lastModifiedBy: [String!]
+
+  """Filter for elements by their ids"""
+  elementId: [String!]
+
+  """Filter for elements by their revit element ids"""
+  revitElementId: [String!]
+}
+
+"""Represents a Revit model."""
+type ElementGroup {
+  """Globally unique identifier."""
+  id: ID!
+
+  """Name of the ElementGroup Container."""
+  name: String
+
+  """
+  Get Elements
+  @param {ElementFilterInput=} filter - RSQL filter to use for searching elements.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  """
+  elements(filter: ElementFilterInput, pagination: PaginationInput): Elements!
+
+  """
+  Get all Property Definitions used in this elementGroup
+  @param {PropertyDefinitionFilterInput=} filter - Specifies how to filter on property definitions.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  """
+  propertyDefinitions(filter: PropertyDefinitionFilterInput, pagination: PaginationInput): PropertyDefinitions!
+
+  """Specific version of this ElementGroup."""
+  version: ElementGroupVersion
+
+  """Version history for this elementGroup"""
+  versionHistory: ElementGroupVersionHistory!
+
+  """Timestamp of elementGroup creation"""
+  createdOn: DateTime
+
+  """Latest timestamp when this elementGroup was modified"""
+  lastModifiedOn: DateTime
+
+  """Alternative identifiers for this elementGroup"""
+  alternativeIdentifiers: ElementGroupAlternativeIdentifiers
+}
+
+"""Contains alternative identifiers for an AEC elementGroup"""
+type ElementGroupAlternativeIdentifiers {
+  """File uniform resource name for the elementGroup"""
+  fileUrn: ID
+
+  """File version uniform resource name for the elementGroup"""
+  fileVersionUrn: ID
+}
+
+"""Information about elementGroup extraction status."""
+type ElementGroupExtractionStatus {
+  """Extraction status."""
+  status: ExtractionStatus!
+
+  """Additional information about extraction status."""
+  details: String
+
+  """If available, the ElementGroup which corresponds to the extraction."""
+  elementGroup: ElementGroup
+}
+
+"""Query input for filtering ElementGroups."""
+input ElementGroupFilterInput {
+  """Query filter in RSQL format to search for elementGroups"""
+  query: String
+
+  """Filter for elementGroups with a specified name"""
+  name: [String!]
+
+  """Filter for elementGroups created by a specified user (email)"""
+  createdBy: [String!]
+
+  """Filter for elementGroups last modified by a specified user (email)"""
+  lastModifiedBy: [String!]
+
+  """Filter for elementGroups with a specified file URN"""
+  fileUrn: [String!]
+}
+
+"""Contains a list of ElementGroups returned in response to a query."""
+type ElementGroups {
+  """
+  Contains information about the current page when results are split into multiple pages.
+  """
+  pagination: Pagination
+
+  """An array containing ElementGroups"""
+  results: [ElementGroup]!
+}
+
+"""Represents a single version of an ElementGroup."""
+type ElementGroupVersion {
+  """version number"""
+  versionNumber: Int!
+
+  """Date and time of version creation."""
+  createdOn: DateTime
+
+  """The ElementGroup at this version."""
+  elementGroup: ElementGroup
+}
+
+"""Input to filter using version criteria."""
+input ElementGroupVersionFilterInput {
+  """version number to use for filtering"""
+  number: Int
+
+  """createdAfter datetime filter"""
+  createdAfter: DateTime
+
+  """createdBefore datetime filter"""
+  createdBefore: DateTime
+
+  """createdOn datetime filter"""
+  createdOn: DateTime
+
+  """filter based on user who created the version"""
+  createdBy: ID
+}
+
+"""Information related to versions of an elementGroup."""
+type ElementGroupVersionHistory {
+  """Globally unique identifier."""
+  id: ID!
+
+  """Latest version."""
+  tipVersion: ElementGroupVersion
+
+  """
+  Query for a specific set of versions.
+  @param {VersionFilterInput=} filter - Specifies how to filter using version specific criteria.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  """
+  versions(filter: ElementGroupVersionFilterInput, pagination: PaginationInput): ElementGroupVersions!
+
+  """
+  Query for a specific version by its version number.
+  @param {Int=} versionNumber - Version number to use for fetching version.
+  """
+  versionByNumber(versionNumber: Int): ElementGroupVersion
+}
+
+"""An array of versions."""
+type ElementGroupVersions {
+  """
+  Contains information about the current page, when results are split into multiple pages.
+  """
+  pagination: Pagination
+
+  """An array of versions"""
+  results: [ElementGroupVersion]!
+}
+
+"""Query input for filtering Elements by their properties"""
+input ElementPropertyFilterInput {
+  """Name of the property"""
+  name: String
+
+  """ID of the property"""
+  id: String
+
+  """Value that the property should have"""
+  value: [String!]
+
+  """Value that the property should have and comparator to apply"""
+  valueWithComparator: [ValueComparatorInput!]
+}
+
+"""Query input for filtering Elements by their references"""
+input ElementReferenceFilterInput {
+  """Name of the reference property"""
+  name: String!
+
+  """ID of the element that should be referenced by this property"""
+  referenceId: [String!]!
+}
+
+"""Contains a list of Elements returned in response to a query."""
+type Elements {
+  """
+  Contains information about the current page, when results are split into multiple pages.
+  """
+  pagination: Pagination
+
+  """An array representing elements"""
+  results: [Element]!
+}
+
+"""Custom scalar which represents the list of user’s email address."""
+scalar EmailAddress
+
+"""Extraction status."""
+enum ExtractionStatus {
+  """Extraction in progress."""
+  IN_PROGRESS
+
+  """Extraction failed."""
+  FAILED
+
+  """Extraction is successful."""
+  SUCCESS
+}
+
+"""
+Contains information about the current page, when results are split into multiple pages.
+"""
+type Pagination {
+  """
+  The address of the next page, if one exists. If the current page is the last page, ``cursor`` is ``null``.
+  """
+  cursor: String
+
+  """The number of items in the response page."""
+  pageSize: Int
+}
+
+"""Specifies how to split the response into multiple pages."""
+input PaginationInput {
+  """
+  Specifies what page to fetch. If you don't specify ``cursor``, fetches the first page.
+  """
+  cursor: String
+
+  """
+  The maximum number of items to return in a page. The default value for ``limit`` varies from query to query.
+  """
+  limit: Int
+}
+
+"""Object representing list of Properties."""
+type Properties {
+  """An array of Properties."""
+  results: [Property]!
+
+  """
+  Contains information about the current page, when results are split into multiple pages.
+  """
+  pagination: Pagination
+}
+
+"""Data object that represents property."""
+type Property {
+  """Human readable name for a Property."""
+  name: String!
+
+  """Display value of the property."""
+  displayValue: String
+
+  """Value of the property."""
+  value: PropertyValue
+
+  """Data object that represents property definition."""
+  definition: PropertyDefinition!
+}
+
+"""
+Data object that represents property definition.
+
+Property definition is an object that acts as a template to create properties on an entity.
+"""
+type PropertyDefinition {
+  """Name for this property definition."""
+  name: String!
+
+  """
+  Specification of the property definition. It represents the data type of a property definition.
+  """
+  specification: String
+
+  """Unit of a property definition."""
+  units: Units
+
+  """The ID of property definition."""
+  id: ID!
+
+  """A short description of the property definition."""
+  description: String
+
+  """Indicates if the parameter is hidden or not in the application."""
+  isHidden: Boolean
+
+  """
+  ``true`` : The property definition is archived.
+  
+  ``false`` : The property definition is active.
+  """
+  isArchived: Boolean
+
+  """Indicates if the parameter is read-only or not in the application."""
+  isReadOnly: Boolean
+
+  """
+  Specifies expected behavior for the property on document data management
+  operation like 'copy' in Autodesk authoring apps. A value of 'true' means the
+  property will be copied along to the new document on such operations.
+  """
+  shouldCopy: Boolean
+
+  """
+  Property definition collection in which this property definition is present.
+  """
+  collection: PropertyDefinitionCollection
+}
+
+"""Data object that represents property definition collection."""
+type PropertyDefinitionCollection {
+  """The ID of this property definition collection."""
+  id: ID!
+
+  """Name for this property definition collection."""
+  name: String
+
+  """Description for this property definition collection."""
+  description: String
+
+  """
+  Get all Property Definitions of this Collection.
+  @param {PropertyDefinitionFilterInput=} filter - Specifies how to filter on property definitions.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  """
+  definitions(filter: PropertyDefinitionFilterInput, pagination: PaginationInput): PropertyDefinitions
+}
+
+"""Specifies how to filter property definition collections."""
+input PropertyDefinitionCollectionFilterInput {
+  """
+  The ID of the property definition collection that needs to be filtered.
+  """
+  id: [ID!]!
+}
+
+"""
+Contains a list of Property Definition Collections returned in response to a query.
+"""
+type PropertyDefinitionCollections {
+  """An array of Property Definition Collections."""
+  results: [PropertyDefinitionCollection]!
+
+  """
+  Contains information about the current page, when results are split into multiple pages.
+  """
+  pagination: Pagination
+}
+
+"""Specifies how to filter property definitions."""
+input PropertyDefinitionFilterInput {
+  names: [String!]
+}
+
+"""List of property definitions."""
+type PropertyDefinitions {
+  """An array of property definition."""
+  results: [PropertyDefinition]!
+
+  """
+  Contains information about the current page, when results are split into multiple pages.
+  """
+  pagination: Pagination
+}
+
+"""Specifies how to filter property."""
+input PropertyFilterInput {
+  """The names of the property that needs to be to filtered."""
+  names: [String!]!
+}
+
+"""Custom scalar which represents custom property values."""
+scalar PropertyValue
+
+"""
+The entry-point for Autodesk entity queries. This acts as the top-level API from which all queries must start.
+"""
+type Query {
+  """
+  Retrieves latest elementGroup data based on given ID.
+  @param {ID} elementGroupId - The ID of the elementGroup.
+  """
+  elementGroupAtTip(elementGroupId: ID!): ElementGroup
+
+  """
+  Retrieves elements from given elementGroup, using additional RSQL filters if provided.
+  @param {ID} elementGroupId - ElementGroup to retrieve elements from.
+  @param {ElementFilterInput=} filter - RSQL filter to use for searching elements.
+  @param {PaginationInput=} pagination - Specifies how to split the response into multiple pages.
+  """
+  elementsByElementGroup(elementGroupId: ID!, filter: ElementFilterInput, pagination: PaginationInput): Elements
+}
+
+"""Reference properties."""
+type ReferenceProperties {
+  """An array representing reference properties"""
+  results: [ReferenceProperty]!
+
+  """
+  Contains information about the current page, when results are split into multiple pages.
+  """
+  pagination: Pagination
+}
+
+"""A reference property which describes relationship between elements."""
+type ReferenceProperty {
+  """The human-readable Length value of the property."""
+  displayValue: String
+
+  """Human readable name for a Property."""
+  name: String!
+
+  """Information about the Property."""
+  definition: PropertyDefinition
+
+  """Data value for the Property"""
+  value: Element
+}
+
+"""Filter using references."""
+input ReferencePropertyFilterInput {
+  names: [String!]
+}
+
+"""Represents the unit of measurement for a property."""
+type Units {
+  """Id of the corresponding unit."""
+  id: ID!
+
+  """Name of the corresponding unit."""
+  name: String!
+}
+
+"""Query input for filtering by a value with a specific comparator"""
+input ValueComparatorInput {
+  """Desired value"""
+  value: String!
+
+  """Comparator to apply"""
+  comparator: Comparators
+}
