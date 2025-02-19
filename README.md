@@ -11,7 +11,7 @@ The application implements a [LangGraph agent](https://python.langchain.com/docs
 - Executing a specific GraphQL query against the AEC Data Model API
 - Processing a JSON response from GraphQL API using [jq](https://jqlang.org/)
 
-The agent is also provided with a subset of the AEC Data Model GraphQL schema (see [AECDM.graphql](./AECDM.graphql)).
+The agent is also provided with a subset of the AEC Data Model GraphQL schema (see [agents/AECDM.graphql](./agents/AECDM.graphql)).
 
 ## Usage
 
@@ -29,6 +29,7 @@ Login with your Autodesk credentials, select one of your design files in ACC, an
 
 - [APS application](https://aps.autodesk.com/en/docs/oauth/v2/tutorials/create-app/) of the _Desktop, Mobile, Single-Page App_ type
 - [OpenAI API key](https://platform.openai.com/docs/quickstart/create-and-export-an-api-key)
+- [Python 3.x](https://www.python.org/downloads/)
 
 ### Setup
 
