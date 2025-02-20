@@ -26,7 +26,9 @@ async def chatbot_prompt(payload: PromptPayload, access_token: str = Depends(_ch
     cache_id_dir = os.path.join(cache_dir, id)
     os.makedirs(cache_id_dir, exist_ok=True)
     if id not in agents:
-        agents[id] = AECDataModelAgent(id, access_token, cache_id_dir)
+        agent = AECDataModelAgent()
+        await agent.initialize(id, access_token, cache_id_dir)
+        agents[id] = agent
     agent = agents[id]
     responses = await agent.prompt(payload.prompt)
     return { "responses": responses }
