@@ -1,3 +1,5 @@
+**AEC Data Model GraphQL Schema**
+
 """Valid comparators when filtering by a value"""
 enum Comparators {
   """Case sensitive"""
