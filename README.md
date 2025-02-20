@@ -8,10 +8,11 @@ Experimental chatbot for querying design data in [Autodesk Construction Cloud](h
 
 The application implements a [LangGraph agent](https://python.langchain.com/docs/how_to/migrate_agent/) with a couple of custom tools/functions:
 
+- Finding relevant property definitions for given input query (using [FAISS](https://python.langchain.com/docs/integrations/vectorstores/faiss/), cached locally)
 - Executing a specific GraphQL query against the AEC Data Model API
 - Processing a JSON response from GraphQL API using [jq](https://jqlang.org/)
 
-The agent is also provided with a subset of the AEC Data Model GraphQL schema (see [agents/AECDM.graphql](./agents/AECDM.graphql)).
+The agent is also provided with a subset of the AEC Data Model GraphQL schema (see [agents/AECDM.graphql](./agents/AECDM.graphql)), and a simplified documentation of the AEC Data Model API concepts such as filtering or pagination (see [agents/SYSTEM_PROMPTS.md](./agents/SYSTEM_PROMPTS.md)).
 
 ## Usage
 
