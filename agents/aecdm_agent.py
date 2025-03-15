@@ -19,7 +19,7 @@ from gql.transport.aiohttp import AIOHTTPTransport
 
 with open(os.path.join(os.path.dirname(__file__), "SYSTEM_PROMPTS.md")) as f:
     SYSTEM_PROMPTS = f.read().replace("{", "{{").replace("}", "}}")
-with open(os.path.join(os.path.dirname(__file__), "AECDM.graphql")) as f:
+with open(os.path.join(os.path.dirname(__file__), "aecdm.graphql")) as f:
     AECDM_GRAPHQL = f.read().replace("{", "{{").replace("}", "}}")
 
 _embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
